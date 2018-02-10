@@ -1,0 +1,59 @@
+centos7系统
+
+# In /etc/yum.repos.d/rabbitmq-erlang.repo
+[rabbitmq-erlang]
+name=rabbitmq-erlang
+baseurl=https://dl.bintray.com/rabbitmq/rpm/erlang/20/el/7
+gpgcheck=1
+gpgkey=https://www.rabbitmq.com/rabbitmq-release-signing-key.asc
+repo_gpgcheck=0
+enabled=1
+
+yum install erlang socat -y
+
+官网下载rabbitMQ的RPM包：
+rpm -ivh rabbitmq-server-3.7.0-1.el7.noarch.rpm
+
+
+启动rabbitMQ
+# rabbitmq-server
+启动管理端口
+# rabbitmq-plugins enable rabbitmq_management
+
+配置集群cluster，需要局域网多台主机安装rabbitMQ，此处集群两个节点为例子：
+
+
+1、然后用其中一台主机的/var/lib/rabbitmq/.erlang.cookie替换所有其他主机的此文件
+
+2、每台主机主机名写到host文件
+192.168.100.41 kafka1
+192.168.100.31 zk1
+
+
+
+以下操作只需要在其中一个节点主机操作
+
+3、在各个节点运行
+# rabbitmqctl stop
+# rabbitmq-server -detached
+
+4、查看运行状态
+# rabbitmqctl cluster_status
+
+5、创建集群
+# rabbitmqctl stop_app
+# rabbitmqctl join_cluster rabbit@kafka1
+# rabbitmqctl start_app
+
+6、查看
+# rabbitmqctl cluster_status
+
+7、添加用户及赋权
+# rabbitmqctl add_user username password
+# abbitmqctl set_user_tags username administrator
+## administrator 为超级管理员权限
+
+8、给用户配置访问权限
+浏览器登陆管理界面http://192.168.100.31:15672/#/users
+在admin -- users -- all users -- name
+选择你添加的用户，在permission -- set permission中设置
