@@ -59,7 +59,19 @@ while [ true ]; do echo "looping...";sleep 2;done
 > cat Dockerfile
 FROM centos:7.6.1810
 COPY ./install/* /data/
-RUN yum -y update && yum -y upgrade && yum install gcc gcc-c++ make net-tools -y && cd /data && tar -zxf redis-5.0.3.tar.gz && cd /data/redis-5.0.3 && make && make install && cd /data && rm -fr /data/redis-5.0.3 && rm -f /data/redis-5.0.3.tar.gz && chmod +x /data/startup-redis-cluster.sh
+RUN yum -y update \
+	&& yum -y upgrade \
+	&& yum install gcc gcc-c++ make net-tools -y \
+	&& cd /data \
+	&& tar -zxf redis-5.0.3.tar.gz \
+	&& cd /data/redis-5.0.3 \
+	&& make \
+	&& make install \
+	&& cd /data \
+	&& rm -fr /data/redis-5.0.3 \
+	&& rm -f /data/redis-5.0.3.tar.gz \
+	&& chmod +x /data/startup-redis-cluster.sh
+
 EXPOSE 7000
 EXPOSE 7001
 EXPOSE 7002
