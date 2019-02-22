@@ -1,0 +1,13 @@
+#cat Dockerfile 
+FROM alpine:3.9
+ADD ./install/jdk-8u201-linux-x64.tar.gz /usr/local
+ADD ./install/glibc.tar.gz /tmp
+RUN apk add --allow-untrusted /tmp/glibc/glibc-2.29-r0.apk && rm -fr /tmp/glibc
+ENV JAVA_HOME=/usr/local/jdk1.8.0_201
+ENV CLASSPATH=$JAVA_HOME/bin
+ENV PATH=.:$JAVA_HOME/bin:$PATH
+CMD ["java","-version"]
+
+# wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.29-r0/glibc-2.29-r0.apk
+
+# docker build -t alpine-jdk:8u201 .
