@@ -1,0 +1,81 @@
+### 生成一个redis5的6节点的cluster集群的docker镜像
+###   以alpine:3.9为基础镜像，install/路径下有redis-5.0.3.tar.gz，6个redis的配置文件，以及一个shell脚本startup-redis-cluster.sh
+> cat Dockerfile
+FROM alpine:3.9
+COPY ./install/* /data/
+RUN apk add --no-cache --virtual .build-deps \
+		coreutils \
+		gcc \
+		linux-headers \
+		make \
+		musl-dev \
+		&& cd /data/ \
+		&& tar -zxf redis-5.0.3.tar.gz \
+		&& cd redis-5.0.3 \
+		&& make && make install \
+		&& rm -fr redis-5.0.3.tar.gz \
+		&& rm -fr redis-5.0.3 \
+EXPOSE 7000
+EXPOSE 7001
+EXPOSE 7002
+EXPOSE 7003
+EXPOSE 7004
+EXPOSE 7005
+ENTRYPOINT ["sh","/data/startup-redis-cluster.sh"]
+
+> cat install/startup-redis-cluster.sh
+#!/bin/ash
+redis-server /data/redis_7000.conf 
+redis-server /data/redis_7001.conf 
+redis-server /data/redis_7002.conf 
+redis-server /data/redis_7003.conf 
+redis-server /data/redis_7004.conf 
+redis-server /data/redis_7005.conf
+localip=$(/sbin/ifconfig |grep Bcast|awk '{print $2}'|awk -F: '{print $2}')
+sleep 3
+echo yes | redis-cli --cluster create $localip:7000 $localip:7001 $localip:7002 $localip:7003 $localip:7004 $localip:7005 --cluster-replicas 1
+while [ true ]; do echo "looping...";sleep 2;done
+
+###  [root@n1 redis5-docker-alpine]# ls
+###  Dockerfile  install
+###  [root@n1 redis5-docker-alpine]# ls install/
+###  redis-5.0.3.tar.gz  redis_7000.conf  redis_7001.conf  redis_7002.conf  redis_7003.conf  redis_7004.conf  redis_7005.conf  startup-redis-cluster.sh
+### 镜像生成命令
+> docker build -t redis:5.0.3-alpine3.9 .
+### 容器启动命令
+> docker run --detach \
+	--publish 7000:7000 \
+	--publish 7001:7001 \
+	--publish 7002:7002 \
+	--publish 7003:7003 \
+	--publish 7004:7004 \
+	--publish 7005:7005 \
+	--name redis5-cluster \
+	--restart always redis:5.0.3-alpine3.9
+### 容器连接登录shell
+> docker exec -it redis5-cluster sh
+  
+###   以centos:7.6.1810为基础镜像，shell脚本内容不一样，因为centos是bash，而alpine是ash，IP地址获取方式有一点区别，死循环也不同
+> cat Dockerfile
+FROM centos:7.6.1810
+COPY ./install/* /data/
+RUN yum -y update && yum -y upgrade && yum install gcc gcc-c++ make net-tools -y && cd /data && tar -zxf redis-5.0.3.tar.gz && cd /data/redis-5.0.3 && make && make install && cd /data && rm -fr /data/redis-5.0.3 && rm -f /data/redis-5.0.3.tar.gz && chmod +x /data/startup-redis-cluster.sh
+EXPOSE 7000
+EXPOSE 7001
+EXPOSE 7002
+EXPOSE 7003
+EXPOSE 7004
+EXPOSE 7005
+ENTRYPOINT ["bash","/data/startup-redis-cluster.sh"]
+
+> cat install/startup-redis-cluster.sh 
+#!/bin/bash
+redis-server /data/redis_7000.conf 
+redis-server /data/redis_7001.conf 
+redis-server /data/redis_7002.conf 
+redis-server /data/redis_7003.conf 
+redis-server /data/redis_7004.conf 
+redis-server /data/redis_7005.conf
+localip=$(/sbin/ifconfig |grep broadcast |awk '{print $2}')
+echo yes | redis-cli --cluster create $localip:7000 $localip:7001 $localip:7002 $localip:7003 $localip:7004 $localip:7005 --cluster-replicas 1
+for((;;));do date;sleep 1;done
